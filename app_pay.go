@@ -39,14 +39,13 @@ func (alipayClient *AlipayClient) TradeAppPay(tradeAppPayRequestParam TradeAppPa
 	if err != nil {
 		return "", err
 	}
-	requestTime := time.Now().Format("2006-01-02 15:04:05")
 	commonRequestParam := &CommonRequestParam{
 		AppId:      alipayClient.AppId,
 		Method:     TRADE_APP_PAY,
 		Format:     "JSON",
 		Charset:    "utf-8",
 		SignType:   signType,
-		Timestamp:  requestTime,
+		Timestamp:  time.Now().Format("2006-01-02 15:04:05"),
 		Version:    "1.0",
 		NotifyUrl:  notifyUrl,
 		BizContent: string(bizContent),

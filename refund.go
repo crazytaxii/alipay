@@ -19,7 +19,7 @@ type TradeRefundRequestParam struct {
 }
 
 type TradeRefundResponseParam struct {
-	CommonResponseParam
+	CommonResponseParam // 公共响应参数
 	// Code    string `json:"code" structs:"code"`                   // 网关返回码
 	// Msg     string `json:"msg" structs:"msg"`                     // 网关返回码描述
 	// SubCode string `json:"sub_code,omitempty" structs:"sub_code"` // 业务返回码
@@ -50,14 +50,13 @@ func (alipayClient *AlipayClient) TradeRefund(tradeRefundRequestParam TradeRefun
 		return nil, err
 	}
 
-	requestTime := time.Now().Format("2006-01-02 15:04:05")
 	commonRequestParam := &CommonRequestParam{
 		AppId:      alipayClient.AppId,
 		Method:     TRADE_REFUND,
 		Format:     "JSON",
 		Charset:    "utf-8",
 		SignType:   signType,
-		Timestamp:  requestTime,
+		Timestamp:  time.Now().Format("2006-01-02 15:04:05"),
 		Version:    "1.0",
 		BizContent: string(bizContent),
 	}
@@ -81,3 +80,63 @@ func (alipayClient *AlipayClient) TradeRefund(tradeRefundRequestParam TradeRefun
 
 	return &result.TradeRefundResponseParam, nil
 } // TradeRefund()
+
+type TradeRefundQueryRequestParam struct {
+	TradeNo      string `json:"trade_no",omitempty`     // 支付宝交易号，和商户订单号不能同时为空
+	OutTradeNo   string `json:"out_trade_no",omitempty` // 订单支付时传入的商户订单号,和支付宝交易号不能同时为空
+	OutRequestNo string `json:"out_request_no"`         // 请求退款接口时，传入的退款请求号
+}
+
+type TradeRefundQueryResponseParam struct {
+	CommonResponseParam // 公共响应参数
+
+	TradeNo                      string `json:"trade_no" structs:"trade_no,omitempty"`
+	OutTradeNo                   string `json:"out_trade_no" structs:"out_trade_no,omitempty"`
+	OutRequestNo                 string `json:"out_request_no" structs:"out_request_no,omitempty"`
+	RefundReason                 string `json:"refund_reason" structs:"refund_reason,omitempty"`
+	TotalAmount                  string `json:"total_amount" structs:"total_amount,omitempty"`
+	RefundAmount                 string `json:"refund_amount" structs:"refund_amount,omitempty"`
+	PresentRefundDiscountAmount  string `json:"present_refund_discount_amount" structs:"present_refund_discount_amount,omitempty"`
+	PresentRefundMdiscountAmount string `json:"present_refund_mdiscount_amount" structs:"present_refund_mdiscount_amount,omitempty"`
+}
+
+/**
+ * 退款查询
+ */
+func (alipayClient *AlipayClient) TradeRefundQuery(tradeRefundQueryRequestParam *TradeRefundQueryRequestParam,
+	signType string) (*TradeRefundQueryResponseParam, error) {
+	bizContent, err := json.Marshal(tradeRefundQueryRequestParam)
+	if err != nil {
+		return nil, err
+	}
+
+	commonRequestParam := &CommonRequestParam{
+		AppId:      alipayClient.AppId,
+		Method:     TRADE_REFUND_QUERY,
+		Format:     "JSON",
+		Charset:    "utf-8",
+		SignType:   signType,
+		Timestamp:  time.Now().Format("2006-01-02 15:04:05"),
+		Version:    "1.0",
+		BizContent: string(bizContent),
+	}
+	respBody, err := alipayClient.doRequest(commonRequestParam, signType)
+	if err != nil {
+		return nil, err
+	}
+	result := new(struct {
+		TradeRefundQueryResponseParam `json:"alipay_trade_fastpay_refund_query_response"`
+		Sign                          string `json:"sign"`
+	})
+	err = json.Unmarshal([]byte(respBody), result)
+	if err != nil {
+		return nil, err
+	}
+	if result.TradeRefundQueryResponseParam.Msg != "Success" {
+		return nil, fmt.Errorf("Alipay trade refund query failed, code: %s, sub_code: %s, err_msg: %s",
+			result.TradeRefundQueryResponseParam.Code, result.TradeRefundQueryResponseParam.SubCode,
+			result.TradeRefundQueryResponseParam.SubMsg)
+	}
+
+	return &result.TradeRefundQueryResponseParam, nil
+} // TradeRefundQuery()

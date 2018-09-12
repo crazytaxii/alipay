@@ -23,7 +23,7 @@ type AntiFraudRequestParam struct {
 }
 
 type AntiFraudResponseParam struct {
-	*CommonResponseParam
+	CommonResponseParam
 
 	BizNo          string `json:"biz_no"`
 	VerifyCode     string `json:"verify_code"`
@@ -41,14 +41,13 @@ func (alipayClient *AlipayClient) AntiFraudVerify(antiFraudRequestParam *AntiFra
 		return err
 	}
 
-	requestTime := time.Now().Format("2006-01-02 15:04:05")
 	commonRequestParam := &CommonRequestParam{
 		AppId:      alipayClient.AppId,
 		Method:     TRADE_REFUND,
 		Format:     "JSON",
 		Charset:    "utf-8",
 		SignType:   signType,
-		Timestamp:  requestTime,
+		Timestamp:  time.Now().Format("2006-01-02 15:04:05"),
 		Version:    "1.0",
 		BizContent: string(bizContent),
 	}

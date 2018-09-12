@@ -92,4 +92,24 @@ refund_preset_paytool_list|PresetPayToolInfo|选填||退回的前置资产列表
 |present_refund_discount_amount|string|选填|11|本次退款金额中平台优惠退款金额|
 |present_refund_mdiscount_amount|string|选填|11|本次退款金额中商家优惠退款金额|
 
-##
+## 退款查询
+### 请求参数
+|参数|类型|是否必填|最大长度|描述|
+|---|---|---|---|---|
+|trade_no|string|特殊可选|64|支付宝交易号，和商户订单号不能同时为空|
+|out_trade_no|string|特殊可选|64|订单支付时传入的商户订单号,和支付宝交易号不能同时为空|
+|out_request_no|string|必选|64|请求退款接口时，传入的退款请求号，如果在退款请求时未传入，则该值为创建交易时的外部交易号|
+
+### 公共响应参数
+|参数|类型|是否必填|最大长度|描述|
+|---|---|---|---|---|
+|trade_no|string|选填|64|支付宝交易号|
+|out_trade_no|string|选填|64|创建交易传入的商户订单号|
+|out_request_no|string|选填|64|本笔退款对应的退款请求号|
+|refund_reason|string|选填|256|发起退款时，传入的退款原因|
+|total_amount|string|选填|11|该笔退款所对应的交易的订单金额|
+|refund_amount|string|选填|11|本次退款请求，对应的退款金额|
+|refund_royaltys|RefundRoyaltyResult|选填||退分账明细信息|
+|present_refund_buyer_amount|string|选填|11|本次退款金额中买家退款金额|
+|present_refund_discount_amount|string|选填|11|本次退款金额中平台优惠退款金额|
+|present_refund_mdiscount_amount|string|选填|11|本次退款金额中商家优惠退款金额|

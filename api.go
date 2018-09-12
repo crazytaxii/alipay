@@ -5,8 +5,9 @@ import ()
 const BASE_URL = "https://openapi.alipay.com/gateway.do"
 
 const (
-	TRADE_APP_PAY = "alipay.trade.app.pay" // app支付接口2.0
-	TRADE_REFUND  = "alipay.trade.refund"  // 统一收单交易退款
+	TRADE_REFUND_QUERY = "alipay.trade.fastpay.refund.query" // 统一收单交易退款查询
+	TRADE_APP_PAY      = "alipay.trade.app.pay"              // app支付接口2.0
+	TRADE_REFUND       = "alipay.trade.refund"               // 统一收单交易退款
 )
 
 // 公共请求参数
