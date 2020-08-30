@@ -1,62 +1,20 @@
 package alipay
 
 import (
+	"bytes"
 	"crypto"
-	"crypto/rand"
-	"crypto/rsa"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
 )
 
-func doSignRSA(param map[string]interface{}, pvtKey *rsa.PrivateKey) (string, error) {
-	pList := make([]string, 0, 0)
-	for k, v := range param {
-		if v != "" {
-			pList = append(pList, fmt.Sprintf("%s=%s", k, strings.TrimSpace(fmt.Sprintf("%v", v))))
-		}
-	}
-	sort.Strings(pList)
-	src := strings.Join(pList, "&")
-	sign, err := signPKCS1v15([]byte(src), pvtKey, crypto.SHA1)
-	if err != nil {
-		return "", err
-	}
-	return base64.StdEncoding.EncodeToString(sign), nil
-} // doSignRSA()
-
-func doSignRSA2(param map[string]interface{}, pvtKey *rsa.PrivateKey) (string, error) {
-	pList := make([]string, 0, 0)
-	for k, v := range param {
-		if v != "" {
-			pList = append(pList, fmt.Sprintf("%s=%s", k, strings.TrimSpace(fmt.Sprintf("%v", v))))
-		}
-	}
-	sort.Strings(pList)
-	src := strings.Join(pList, "&")
-	sign, err := signPKCS1v15([]byte(src), pvtKey, crypto.SHA256)
-	if err != nil {
-		return "", err
-	}
-	return base64.StdEncoding.EncodeToString(sign), nil
-} // doSignRSA2()
-
-func signPKCS1v15(src []byte, key *rsa.PrivateKey, hash crypto.Hash) ([]byte, error) {
-	h := hash.New()
-	h.Write(src)
-	hashed := h.Sum(nil)
-
-	return rsa.SignPKCS1v15(rand.Reader, key, hash, hashed)
-} // signPKCS1v15()
-
-func verifySignRSA(param map[string]interface{}, sign string, pubKey *rsa.PublicKey) bool {
-	if sign == "" {
-		return false
-	}
+func (c *AlipayClient) doSign(param map[string]interface{}, signType string) (string, error) {
 	pList := make([]string, 0, 0)
 	for k, v := range param {
 		if k == "sign" {
+			// 剔除sign字段
 			continue
 		}
 		if v != "" {
@@ -65,46 +23,58 @@ func verifySignRSA(param map[string]interface{}, sign string, pubKey *rsa.Public
 	}
 	sort.Strings(pList)
 	src := strings.Join(pList, "&")
-	sig, err := base64.StdEncoding.DecodeString(sign)
-	if err != nil {
-		return false
+	buf := bytes.NewBufferString(src)
+	var sign []byte
+	var err error
+	switch signType {
+	case SIGN_RSA:
+		sign, err = signPKCS1v15(buf.Bytes(), c.PvtKey, crypto.SHA1)
+		if err != nil {
+			return "", err
+		}
+	case SIGN_RSA2:
+		sign, err = signPKCS1v15(buf.Bytes(), c.PvtKey, crypto.SHA256)
+		if err != nil {
+			return "", err
+		}
+	default:
+		return "", errors.New("Wrong sign type")
 	}
-	err = verifyPKCS1v15([]byte(src), sig, pubKey, crypto.SHA1)
-	if err != nil {
-		return false
-	}
-	return true
-} // verifySignRSA()
 
-func verifySignRSA2(param map[string]interface{}, sign string, pubKey *rsa.PublicKey) bool {
+	return base64.StdEncoding.EncodeToString(sign), nil
+}
+
+func (c *AlipayClient) doVerifySign(param map[string]interface{}, sign, signType string) bool {
 	if sign == "" {
+		return false
+	}
+	signB64, err := base64.StdEncoding.DecodeString(sign)
+	if err != nil {
 		return false
 	}
 	pList := make([]string, 0, 0)
 	for k, v := range param {
-		if k == "sign" {
+		if k == "sign" || k == "sign_type" {
+			// 剔除sign和sign_type两个参数
 			continue
 		}
 		if v != "" {
 			pList = append(pList, fmt.Sprintf("%s=%s", k, strings.TrimSpace(fmt.Sprintf("%v", v))))
 		}
 	}
+	sort.Strings(pList)
 	src := strings.Join(pList, "&")
-	sig, err := base64.StdEncoding.DecodeString(sign)
-	if err != nil {
+	buf := bytes.NewBufferString(src)
+	switch signType {
+	case SIGN_RSA:
+		err = verifyPKCS1v15(buf.Bytes(), signB64, c.AlipayPubKey, crypto.SHA1)
+	case SIGN_RSA2:
+		err = verifyPKCS1v15(buf.Bytes(), signB64, c.AlipayPubKey, crypto.SHA256)
+	default:
 		return false
 	}
-	err = verifyPKCS1v15([]byte(src), sig, pubKey, crypto.SHA256)
 	if err != nil {
 		return false
 	}
 	return true
-} // verifySignRSA2()
-
-func verifyPKCS1v15(src []byte, sign []byte, key *rsa.PublicKey, hash crypto.Hash) error {
-	h := hash.New()
-	h.Write(src)
-	hashed := h.Sum(nil)
-
-	return rsa.VerifyPKCS1v15(key, hash, hashed, sign)
-} // verifyPKCS1v15()
+}

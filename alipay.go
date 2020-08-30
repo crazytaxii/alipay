@@ -2,41 +2,42 @@ package alipay
 
 import (
 	"crypto/rsa"
-
-	"github.com/parnurzeal/gorequest"
 )
 
 type AlipayClient struct {
-	AppId        string
-	SellerId     string
-	MyPubKey     *rsa.PublicKey
-	MyPvtKey     *rsa.PrivateKey
-	AlipayPubKey *rsa.PublicKey
-	Agent        *gorequest.SuperAgent
+	AppID        string
+	SellerID     string
+	PubKey       rsa.PublicKey
+	PvtKey       rsa.PrivateKey
+	AlipayPubKey rsa.PublicKey
 }
 
-var alipayClient = new(AlipayClient)
+var client *AlipayClient
 
-func NewClient(appId string, sellerId string, myPubKey string, myPvtKey string, aliPubKey string) (*AlipayClient, error) {
-	alipayClient.AppId = appId
-	alipayClient.SellerId = sellerId
-	var err error
-	alipayClient.MyPubKey, err = ParsePublicKey(myPubKey)
+func NewClient(appId, sellerId, myPubKey, myPvtKey, aliPubKey string) (*AlipayClient, error) {
+	pubKey, err := parsePublicKey(myPubKey)
 	if err != nil {
 		return nil, err
 	}
-	alipayClient.MyPvtKey, err = ParsePrivateKey(myPvtKey)
+	pvtKey, err := parsePrivateKey(myPvtKey)
 	if err != nil {
 		return nil, err
 	}
-	alipayClient.AlipayPubKey, err = ParsePublicKey(aliPubKey)
+	alipayPubKey, err := parsePublicKey(aliPubKey)
 	if err != nil {
 		return nil, err
 	}
-	alipayClient.Agent = gorequest.New()
-	return alipayClient, nil
-} // NewClient()
+
+	client = &AlipayClient{
+		AppID:        appId,
+		SellerID:     sellerId,
+		PubKey:       *pubKey,
+		PvtKey:       *pvtKey,
+		AlipayPubKey: *alipayPubKey,
+	}
+	return client, nil
+}
 
 func GetClient() *AlipayClient {
-	return alipayClient
-} // GetClient()
+	return client
+}

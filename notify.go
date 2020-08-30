@@ -2,17 +2,18 @@ package alipay
 
 import (
 	"errors"
-	"github.com/fatih/structs"
 	"net/http"
 
+	"github.com/fatih/structs"
 	"github.com/gorilla/schema"
 )
 
-type TradeNotificationRaram struct {
-	NotifyTime        string `structs:"notify_time" schema:"notify_time,required"`                  // 通知时间
-	NotifyType        string `structs:"notify_type" schema:"notify_type,required"`                  // 通知类型
-	NotifyId          string `structs:"notify_id" schema:"notify_id,required"`                      // 通知校验ID
-	AppId             string `structs:"app_id" schema:"app_id,required"`                            // 支付宝分配给开发者的应用ID
+type TradeNotificationParam struct {
+	NotifyTime        string `structs:"notify_time" schema:"notify_time,required"` // 通知时间
+	NotifyType        string `structs:"notify_type" schema:"notify_type,required"` // 通知类型
+	NotifyID          string `structs:"notify_id" schema:"notify_id,required"`     // 通知校验ID
+	AppID             string `structs:"app_id" schema:"app_id,required"`           // 支付宝分配给开发者的应用ID
+	AuthAppID         string `structs:"auth_app_id" schema:"auth_app_id,required"`
 	Charset           string `structs:"charset" schema:"charset,required"`                          // 编码格式
 	Version           string `structs:"version" schema:"version,required"`                          // 接口版本
 	SignType          string `structs:"sign_type" schema:"sign_type,required"`                      // 签名类型
@@ -20,9 +21,9 @@ type TradeNotificationRaram struct {
 	TradeNo           string `structs:"trade_no" schema:"trade_no,required"`                        // 支付宝交易号
 	OutTradeNo        string `structs:"out_trade_no" schema:"out_trade_no,required"`                // 商户订单号
 	OutBizNo          string `structs:"out_biz_no,omitempty" schema:"out_biz_no"`                   // 商户业务号
-	BuyerId           string `structs:"buyer_id,omitempty" schema:"buyer_id"`                       // 买家支付宝用户号
-	BuyerLogonId      string `structs:"buyer_logon_id,omitempty" schema:"buyer_logon_id"`           // 买家支付宝账号
-	SellerId          string `structs:"seller_id,omitempty" schema:"seller_id"`                     // 卖家支付宝用户号
+	BuyerID           string `structs:"buyer_id,omitempty" schema:"buyer_id"`                       // 买家支付宝用户号
+	BuyerLogonID      string `structs:"buyer_logon_id,omitempty" schema:"buyer_logon_id"`           // 买家支付宝账号
+	SellerID          string `structs:"seller_id,omitempty" schema:"seller_id"`                     // 卖家支付宝用户号
 	SellerEmail       string `structs:"seller_email,omitempty" schema:"seller_email"`               // 卖家支付宝账号
 	TradeStatus       string `structs:"trade_status,omitempty" schema:"trade_status"`               // 交易状态
 	TotalAmount       string `structs:"total_amount,omitempty" schema:"total_amount"`               // 订单金额
@@ -45,7 +46,7 @@ type TradeNotificationRaram struct {
 /**
  * 解析支付宝通知请求并验签
  */
-func (alipayClient *AlipayClient) GetTradeNotification(req *http.Request) (*TradeNotificationRaram, error) {
+func (c *AlipayClient) GetTradeNotification(req *http.Request) (*TradeNotificationParam, error) {
 	if req == nil {
 		return nil, errors.New("Nil request")
 	}
@@ -54,22 +55,15 @@ func (alipayClient *AlipayClient) GetTradeNotification(req *http.Request) (*Trad
 		return nil, err
 	}
 
-	param := new(TradeNotificationRaram)
+	param := new(TradeNotificationParam)
 	err = schema.NewDecoder().Decode(param, req.PostForm)
 	if err != nil {
 		return nil, err
 	}
 
-	var ok bool
-	if param.SignType == SIGN_RSA {
-		ok = verifySignRSA(structs.Map(param), param.Sign, alipayClient.AlipayPubKey)
-	} else if param.SignType == SIGN_RSA2 {
-		ok = verifySignRSA2(structs.Map(param), param.Sign, alipayClient.AlipayPubKey)
-	}
-
-	if ok == false {
+	if ok := c.doVerifySign(structs.Map(param), param.Sign, param.SignType); !ok {
 		return nil, errors.New("Verify sign failed")
 	}
 
 	return param, nil
-} // GetTradeNotification()
+}

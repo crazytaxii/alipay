@@ -3,8 +3,9 @@ package alipay_test
 import (
 	"fmt"
 
-	"github.com/crazytaxii/alipay"
 	"testing"
+
+	"github.com/crazytaxii/alipay"
 )
 
 func TestTradeAppAay(t *testing.T) {
@@ -22,7 +23,7 @@ func TestTradeAppAay(t *testing.T) {
 	tradeAppPayRequestParam := alipay.TradeAppPayRequestParam{
 		TimeoutExpress: "30m",
 		TotalAmount:    "0.01",
-		SellerId:       SELLER_ID,
+		SellerID:       SELLER_ID,
 		ProductCode:    "QUICK_MSECURITY_PAY",
 		Body:           "test body",
 		Subject:        "test subject",
